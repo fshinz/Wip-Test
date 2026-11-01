@@ -10,10 +10,15 @@ import { type Analysis, analyzeColor, currentTheme } from './tokens'
 export type ColorHit = { prop: string } & Analysis
 export type Layer = { component: string; hint?: string; colors: ColorHit[] }
 export type Report = { id: number; ts: number; theme: string; layers: Layer[] }
+export type InspectMode = 'element' | 'token'
 
 export const inspectState = {
   enabled: false,
-  copyOnTap: true,
+  mode: 'element' as InspectMode,
+  copyOnTap: false,
+  showButton: true,
+  /** taps are ignored until this timestamp (set while the floating menu is open) */
+  menuUntil: 0,
   history: [] as Report[],
   status: {} as Record<string, string>,
 }
@@ -90,6 +95,8 @@ let batch: RawLayer[] | null = null
 let reportId = 0
 
 function onTap(name: string, entries: [string, unknown][], props: any) {
+  if (Date.now() < inspectState.menuUntil) return
+
   const hint = props.testID || props.nativeID || props.accessibilityLabel
   if (!batch) {
     batch = []
@@ -97,6 +104,19 @@ function onTap(name: string, entries: [string, unknown][], props: any) {
     setTimeout(flush, 0)
   }
   batch.push({ name, entries, hint: typeof hint === 'string' ? hint : undefined })
+}
+
+/** Drops the current tap. Called by the floating button so it never inspects itself. */
+export function suppressBatch() {
+  batch = null
+}
+
+export function markMenuOpen() {
+  inspectState.menuUntil = Date.now() + 8000
+}
+
+export function markMenuClosed() {
+  inspectState.menuUntil = 0
 }
 
 function flush() {
@@ -113,7 +133,7 @@ function flush() {
     if (seen.has(sig)) continue
     seen.add(sig)
     layers.push({ component: l.name, hint: l.hint, colors })
-    if (layers.length >= 6) break
+    if (layers.length >= 4) break
   }
 
   const report: Report = { id: reportId++, ts: Date.now(), theme: currentTheme(), layers }
@@ -122,9 +142,9 @@ function flush() {
   if (inspectState.copyOnTap) Clipboard.setString(reportToText(report))
 
   try {
-    ToastActionCreators.open({
-      key: 'theme-inspector',
-      content: reportSummary(report),
+    // Signature is open(key, options) in this Discord build.
+    ToastActionCreators.open('theme-inspector', {
+      text: reportSummary(report),
       IconComponent: lookupGeneratedIconComponent(
         'CopyIcon',
         'CopyIcon-secondary',
@@ -148,31 +168,90 @@ export function tokenLabel(c: Analysis) {
   return 'no token match'
 }
 
+function propLabel(prop: string) {
+  const k = prop.replace('style.', '')
+  if (k === 'backgroundColor') return 'background'
+  if (k === 'color') return 'text'
+  if (/^border.*Color$/.test(k)) return 'border'
+  if (k === 'tintColor' || k === 'fill' || k === 'stroke') return 'icon'
+  if (k === 'shadowColor' || k === 'textShadowColor') return 'shadow'
+  return k
+}
+
 export function reportSummary(r: Report) {
   const l = r.layers[0]
   const c = l?.colors[0]
   if (!l || !c) return 'No colors found'
-  return `${l.component} · ${c.prop.replace('style.', '')} → ${tokenLabel(c)}${c.value ? ` (${c.value})` : ''}`
+  return `${l.component} · ${propLabel(c.prop)} → ${tokenLabel(c)}${c.value ? ` (${c.value})` : ''}`
 }
 
-export function reportToText(r: Report) {
-  const lines = [`Theme: ${r.theme}`]
+function elementText(r: Report) {
+  const lines = [`${r.theme} theme`]
   for (const l of r.layers) {
-    lines.push('', `Element: ${l.component}${l.hint ? ` (${l.hint})` : ''}`)
+    lines.push('', `${l.component}${l.hint ? ` #${l.hint}` : ''}`)
+    const seen = new Set<string>()
     for (const c of l.colors) {
-      lines.push(`  Property: ${c.prop}`)
-      lines.push(`    Value: ${c.value ?? c.input}`)
-      if (c.semantic) lines.push(`    Semantic token: ${c.semantic}  [exact]`)
-      if (c.raw) lines.push(`    Raw token: ${c.raw}  [exact]`)
-      if (c.semanticMatches.length) {
-        lines.push(`    Semantic tokens with same value: ${c.semanticMatches.join(', ')}`)
-      }
-      if (c.rawMatches.length) {
-        lines.push(`    Raw tokens with same value: ${c.rawMatches.join(', ')}`)
-      }
+      const label = propLabel(c.prop)
+      const key = `${label}|${c.value ?? c.input}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      lines.push(`  ${label}: ${c.value ?? c.input}  ${tokenLabel(c)}`)
     }
   }
   return lines.join('\n')
+}
+
+function tokenText(r: Report) {
+  type Group = {
+    labels: Set<string>
+    semantic: Set<string>
+    semanticMatches: Set<string>
+    raw: Set<string>
+    rawMatches: Set<string>
+  }
+  const groups = new Map<string, Group>()
+
+  for (const l of r.layers) {
+    for (const c of l.colors) {
+      const key = c.value ?? c.input
+      let g = groups.get(key)
+      if (!g) {
+        g = {
+          labels: new Set(),
+          semantic: new Set(),
+          semanticMatches: new Set(),
+          raw: new Set(),
+          rawMatches: new Set(),
+        }
+        groups.set(key, g)
+      }
+      g.labels.add(propLabel(c.prop))
+      if (c.semantic) g.semantic.add(c.semantic)
+      if (c.raw) g.raw.add(c.raw)
+      for (const n of c.semanticMatches) g.semanticMatches.add(n)
+      for (const n of c.rawMatches) g.rawMatches.add(n)
+    }
+  }
+
+  const lines = [`${r.theme} theme`]
+  for (const [value, g] of groups) {
+    const semantic = [
+      ...Array.from(g.semantic).map(n => `${n} (exact)`),
+      ...Array.from(g.semanticMatches).map(n => `≈ ${n}`),
+    ]
+    const raw = [
+      ...Array.from(g.raw).map(n => `${n} (exact)`),
+      ...Array.from(g.rawMatches).map(n => `≈ ${n}`),
+    ]
+    lines.push('', `${value}  (${Array.from(g.labels).join(', ')})`)
+    lines.push(`  semantic: ${semantic.join(', ') || 'none'}`)
+    lines.push(`  raw: ${raw.join(', ') || 'none'}`)
+  }
+  return lines.join('\n')
+}
+
+export function reportToText(r: Report, mode: InspectMode = inspectState.mode) {
+  return mode === 'token' ? tokenText(r) : elementText(r)
 }
 
 // ── patching ────────────────────────────────────────────────────────────────
@@ -219,7 +298,8 @@ export function findJsxRuntime() {
 }
 
 function install() {
-  inspectState.status = {}
+  inspectState.status.createElement = ''
+  inspectState.status.jsx = ''
 
   try {
     unpatches.push(before(React as any, 'createElement', rewrite as any))
@@ -261,8 +341,20 @@ export function setInspecting(on: boolean) {
   emit()
 }
 
+/** Picks how taps are reported and turns inspecting on. */
+export function startMode(mode: InspectMode) {
+  inspectState.mode = mode
+  if (!inspectState.enabled) setInspecting(true)
+  else emit()
+}
+
 export function setCopyOnTap(on: boolean) {
   inspectState.copyOnTap = on
+  emit()
+}
+
+export function setShowButton(on: boolean) {
+  inspectState.showButton = on
   emit()
 }
 
