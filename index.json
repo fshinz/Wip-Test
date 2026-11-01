@@ -8,7 +8,7 @@
       "description": "Inspect UI element colors, identify matching semantic and raw theme tokens, and browse available theme tokens.",
       "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test \"GitHub\")",
       "channels": {
-        "latest": "1.0.2"
+        "latest": "1.0.3"
       },
       "versions": {
         "1.0.0": {
@@ -41,6 +41,19 @@
           "url": "https://fshinz.github.io/Wip-Test/pool/shin.theme-inspector@1.0.2.zip",
           "sha256": "b19712b2f1f9c473db8e762393a8ca7d05dc237af219809856dca7d5ce72190d",
           "size": 5200,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.3": {
+          "url": "https://fshinz.github.io/Wip-Test/pool/shin.theme-inspector@1.0.3.zip",
+          "sha256": "6a3779740182bc8000a4fd40f9104a2d153c730724f477984522f65537974dea",
+          "size": 5207,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
