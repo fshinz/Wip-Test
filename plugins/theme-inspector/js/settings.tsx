@@ -14,6 +14,7 @@ import {
   subscribe,
 } from './inspect'
 import { forceRootUpdate } from './overlay'
+import { probeMounts } from './probe'
 import { currentTheme, getMaps, tokensAvailable } from './tokens'
 
 const h = (...args: any[]) => React.createElement(...args)
@@ -92,9 +93,14 @@ function ElementMode() {
         onPress: refreshOverlay,
       }),
       h(TableRow, {
+        label: 'Probe mount points',
+        subLabel: 'Checks which known app components exist. Wait 4 seconds, then read Status.',
+        onPress: probeMounts,
+      }),
+      h(TableRow, {
         label: 'Status',
         subLabel: status || 'No status yet.',
-        subLabelLineClamp: 8,
+        subLabelLineClamp: 10,
       }),
     ),
 
