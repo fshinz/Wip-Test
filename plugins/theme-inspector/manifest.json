@@ -3,7 +3,7 @@
   "id": "shin.theme-inspector",
   "name": "Theme Inspector",
   "description": "Inspect UI element colors, identify matching semantic and raw theme tokens, and browse available theme tokens.",
-  "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test "(\Github\")",
+  "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test \"GitHub\")",
   "version": "1.0.0",
   "dependencies": {
     "valenced.api": {
