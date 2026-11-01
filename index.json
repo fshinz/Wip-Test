@@ -1,7 +1,7 @@
 {
   "format": 1,
   "name": "My Plugin Repository",
-  "description": "Theme Inspector plugin repository by shin.",
+  "description": "Example plugin repository from the Valenced plugin template.",
   "plugins": {
     "shin.theme-inspector": {
       "name": "Theme Inspector",
