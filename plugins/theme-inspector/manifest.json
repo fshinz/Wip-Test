@@ -4,7 +4,7 @@
   "name": "Theme Inspector",
   "description": "Inspect UI element colors, identify matching semantic and raw theme tokens, and browse available theme tokens.",
   "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test \"GitHub\")",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "dependencies": {
     "valenced.api": {
       "version": ">=1 <2"
