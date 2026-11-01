@@ -1,6 +1,8 @@
+import { ToastActionCreators } from '@valenced/discord/actions'
 import { Design } from '@valenced/discord/design'
 import { Clipboard } from '@valenced/externals/react-native-clipboard'
 import { React, ReactNative } from '@valenced/react'
+import { lookupGeneratedIconComponent } from '@valenced/utils/discord'
 import {
   clearHistory,
   inspectState,
@@ -8,6 +10,7 @@ import {
   reportToText,
   setCopyOnTap,
   setInspecting,
+  setShowButton,
   subscribe,
 } from './inspect'
 import { currentTheme, getMaps, tokensAvailable } from './tokens'
@@ -29,6 +32,21 @@ function Swatch({ color }: { color?: string }) {
   })
 }
 
+function refreshOverlay() {
+  try {
+    ToastActionCreators.open('theme-inspector-refresh', {
+      text: 'Theme Inspector: refreshing floating button',
+      IconComponent: lookupGeneratedIconComponent(
+        'CopyIcon',
+        'CopyIcon-secondary',
+        'CopyIcon-primary',
+      ),
+    })
+  } catch (e) {
+    inspectState.status.refresh = `toast failed: ${String(e)}`
+  }
+}
+
 function ElementMode() {
   const { Button, TableRow, TableRowGroup, TableSwitchRow, Text } = Design
   const { View } = ReactNative
@@ -36,6 +54,7 @@ function ElementMode() {
 
   const history = inspectState.history
   const status = Object.entries(inspectState.status)
+    .filter(([, v]) => v)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n')
 
@@ -55,13 +74,26 @@ function ElementMode() {
       }),
       h(TableSwitchRow, {
         label: 'Copy report on tap',
-        subLabel: 'Copies the full report to the clipboard whenever you tap an element.',
+        subLabel: 'Copies the report to the clipboard whenever you tap an element.',
         value: inspectState.copyOnTap,
         onValueChange: setCopyOnTap,
       }),
-      inspectState.enabled && status
-        ? h(TableRow, { label: 'Hook status', subLabel: status, subLabelLineClamp: 4 })
-        : null,
+      h(TableSwitchRow, {
+        label: 'Floating button',
+        subLabel: 'Show the draggable TI button for quick access from any screen.',
+        value: inspectState.showButton,
+        onValueChange: setShowButton,
+      }),
+      h(TableRow, {
+        label: 'Refresh floating button',
+        subLabel: 'Opens a test toast, which makes Discord re-render the area the button lives in.',
+        onPress: refreshOverlay,
+      }),
+      h(TableRow, {
+        label: 'Status',
+        subLabel: status || 'No status yet.',
+        subLabelLineClamp: 6,
+      }),
     ),
 
     history.length
@@ -169,7 +201,7 @@ function TokenMode() {
           label: name,
           subLabel:
             open === name
-              ? `Value: ${value}\n${same.length ? `Same value: ${same.slice(0, 12).join(', ')}` : 'No other token has this value.'}\n\nTap Copy to copy "${name}: ${value}"`
+              ? `Value: ${value}\n${same.length ? `Same value: ${same.slice(0, 12).join(', ')}` : 'No other token has this value.'}`
               : value,
           subLabelLineClamp: open === name ? 12 : 1,
           onPress: () => setOpen(open === name ? null : name),
@@ -197,12 +229,15 @@ function TokenMode() {
 
 export function ThemeInspectorSettings() {
   const { ScrollView, View } = ReactNative
-  const { TableRow, TableRowGroup } = Design
+  const { TableRow, TableRowGroup, Text } = Design
 
   const [, rerender] = React.useReducer((n: number) => n + 1, 0)
   const [mode, setMode] = React.useState<'element' | 'token'>('element')
 
   React.useEffect(() => subscribe(rerender), [])
+
+  const check = (active: boolean) =>
+    active ? h(Text, { variant: 'text-sm/semibold', color: 'text-positive' }, '✓') : null
 
   return h(
     ScrollView,
@@ -216,13 +251,13 @@ export function ThemeInspectorSettings() {
         h(TableRow, {
           label: 'Element mode',
           subLabel: 'Tap a UI element to see where its colors come from.',
-          trailing: mode === 'element' ? h(Design.Text, { variant: 'text-sm/semibold', color: 'text-positive' }, '✓') : null,
+          trailing: check(mode === 'element'),
           onPress: () => setMode('element'),
         }),
         h(TableRow, {
           label: 'Token mode',
           subLabel: 'Browse and search every semantic and raw color token.',
-          trailing: mode === 'token' ? h(Design.Text, { variant: 'text-sm/semibold', color: 'text-positive' }, '✓') : null,
+          trailing: check(mode === 'token'),
           onPress: () => setMode('token'),
         }),
       ),
