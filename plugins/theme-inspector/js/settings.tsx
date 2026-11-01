@@ -13,6 +13,7 @@ import {
   setShowButton,
   subscribe,
 } from './inspect'
+import { forceRootUpdate } from './overlay'
 import { currentTheme, getMaps, tokensAvailable } from './tokens'
 
 const h = (...args: any[]) => React.createElement(...args)
@@ -33,6 +34,7 @@ function Swatch({ color }: { color?: string }) {
 }
 
 function refreshOverlay() {
+  forceRootUpdate()
   try {
     ToastActionCreators.open('theme-inspector-refresh', {
       text: 'Theme Inspector: refreshing floating button',
@@ -86,13 +88,13 @@ function ElementMode() {
       }),
       h(TableRow, {
         label: 'Refresh floating button',
-        subLabel: 'Opens a test toast, which makes Discord re-render the area the button lives in.',
+        subLabel: 'Forces the root to re-render and opens a test toast.',
         onPress: refreshOverlay,
       }),
       h(TableRow, {
         label: 'Status',
         subLabel: status || 'No status yet.',
-        subLabelLineClamp: 6,
+        subLabelLineClamp: 8,
       }),
     ),
 
