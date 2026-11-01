@@ -104,7 +104,10 @@ export function openMenu() {
   }
 }
 
-function FloatingButton() {
+// Only one mount point draws the button, whichever renders first.
+let activeMount: string | undefined
+
+function FloatingButton({ mount }: { mount: string }) {
   const { Dimensions, PanResponder, Pressable, View } = ReactNative
   const { Text } = Design
 
@@ -132,9 +135,13 @@ function FloatingButton() {
     [],
   )
 
+  if (activeMount && activeMount !== mount) return null
+  activeMount = mount
+
   if (!inspectState.showButton) return null
 
   if (fabPos.x < 0) fabPos.x = Dimensions.get('window').width - SIZE - 12
+  inspectState.status.fab = `rendered via ${mount} at ${Math.round(fabPos.x)},${Math.round(fabPos.y)}`
 
   // grey = off, green = element mode, blue = token mode
   const color = !inspectState.enabled
@@ -179,11 +186,73 @@ function FloatingButton() {
   )
 }
 
-/** Appends the floating button to Discord's always-mounted ToastContainer. */
-export function attachOverlay(cleanup: (fn: any) => void) {
-  inspectState.status.overlay = 'waiting for ToastContainer'
+// ── mounting ────────────────────────────────────────────────────────────────
 
-  cleanup(
+const undo: (() => void)[] = []
+let rootInstance: any
+let rootAttached = false
+
+/** Forces the root to re-render so the button shows up without a reload. */
+export function forceRootUpdate() {
+  try {
+    rootInstance?.forceUpdate?.()
+  } catch {
+    /* ignore */
+  }
+}
+
+function wrapOutput(ret: any, mount: string) {
+  try {
+    return h(
+      React.Fragment,
+      null,
+      ret,
+      h(FloatingButton, { key: `theme-inspector-fab-${mount}`, mount }),
+    )
+  } catch {
+    return ret
+  }
+}
+
+function attachRoot() {
+  undo.push(
+    getModules(
+      withName<any>('AppContainer'),
+      (ns: any) => {
+        const Cmp = ns?.default ?? ns
+        try {
+          if (Cmp?.prototype && typeof Cmp.prototype.render === 'function') {
+            undo.push(
+              instead(Cmp.prototype, 'render', function (this: any, args: any, original: any, self: any) {
+                const ctx = self ?? this
+                rootInstance = ctx
+                return wrapOutput(original.apply(ctx, args), 'root')
+              } as any),
+            )
+            rootAttached = true
+            inspectState.status.overlay_root = 'attached (class render)'
+          } else if (typeof ns?.default === 'function') {
+            undo.push(
+              instead(ns, 'default', (args: any, original: any) =>
+                wrapOutput(original.apply(null, args), 'root'),
+              ),
+            )
+            rootAttached = true
+            inspectState.status.overlay_root = 'attached (function)'
+          } else {
+            inspectState.status.overlay_root = 'AppContainer has nothing to patch'
+          }
+        } catch (e) {
+          inspectState.status.overlay_root = `failed: ${String(e)}`
+        }
+      },
+      { returnNamespace: true },
+    ),
+  )
+}
+
+function attachToast() {
+  undo.push(
     getModules(
       withName<any>('ToastContainer'),
       (ns: any) => {
@@ -195,29 +264,47 @@ export function attachOverlay(cleanup: (fn: any) => void) {
               : undefined
 
         if (!key) {
-          inspectState.status.overlay = 'ToastContainer has no patchable export'
+          inspectState.status.overlay_toast = 'no patchable export'
           return
         }
 
-        cleanup(
-          instead(ns, key, (args: any, original: any) => {
-            const ret = original.apply(null, args)
-            try {
-              return h(
-                React.Fragment,
-                null,
-                ret,
-                h(FloatingButton, { key: 'theme-inspector-fab' }),
-              )
-            } catch {
-              return ret
-            }
-          }),
-        )
-
-        inspectState.status.overlay = 'attached (reload if the button is missing)'
+        try {
+          undo.push(
+            instead(ns, key, (args: any, original: any) =>
+              wrapOutput(original.apply(null, args), 'toast'),
+            ),
+          )
+          inspectState.status.overlay_toast = 'attached (fallback)'
+        } catch (e) {
+          inspectState.status.overlay_toast = `failed: ${String(e)}`
+        }
       },
       { returnNamespace: true },
     ),
   )
+}
+
+export function attachOverlay(cleanup: (fn: any) => void) {
+  inspectState.status.overlay_root = 'waiting for AppContainer'
+
+  attachRoot()
+
+  // ToastContainer is only a fallback if the root can't be found.
+  const timer = setTimeout(() => {
+    if (!rootAttached) attachToast()
+  }, 3000)
+  undo.push(() => clearTimeout(timer))
+
+  cleanup(() => {
+    for (const u of undo.splice(0)) {
+      try {
+        u()
+      } catch {
+        /* ignore */
+      }
+    }
+    activeMount = undefined
+    rootInstance = undefined
+    rootAttached = false
+  })
 }
