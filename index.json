@@ -8,7 +8,7 @@
       "description": "Clone a server's roles, channels and permission overwrites into a new server or an existing one you administer.",
       "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test)",
       "channels": {
-        "latest": "1.0.1"
+        "latest": "1.0.2"
       },
       "versions": {
         "1.0.0": {
@@ -28,6 +28,19 @@
           "url": "https://fshinz.github.io/Wip-Test/pool/shin.server-cloner@1.0.1.zip",
           "sha256": "316996875220118da925622d2f364e2955283f111ce8a3d2a1f6e3e40d9170ec",
           "size": 404,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.2": {
+          "url": "https://fshinz.github.io/Wip-Test/pool/shin.server-cloner@1.0.2.zip",
+          "sha256": "d7c15ee162028a84f5df275f683f0f7459a7bf738bf4a70679e80cd883af1c13",
+          "size": 5669,
           "dependencies": {
             "valenced.api": {
               "version": ">=1 <2"
