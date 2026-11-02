@@ -3,6 +3,29 @@
   "name": "My Plugin Repository",
   "description": "Example plugin repository from the Valenced plugin template.",
   "plugins": {
+    "shin.server-cloner": {
+      "name": "Server Cloner",
+      "description": "Clone a server's roles, channels and permission overwrites into a new server or an existing one you administer.",
+      "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test)",
+      "channels": {
+        "latest": "1.0.0"
+      },
+      "versions": {
+        "1.0.0": {
+          "url": "https://fshinz.github.io/Wip-Test/pool/shin.server-cloner@1.0.0.zip",
+          "sha256": "03800991c66e26c45da90b3af2874ba35aed0017618592f806957d67f794a3a0",
+          "size": 404,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1 <2"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        }
+      }
+    },
     "shin.theme-inspector": {
       "name": "Theme Inspector",
       "description": "Inspect UI element colors, identify matching semantic and raw theme tokens, and browse available theme tokens.",
