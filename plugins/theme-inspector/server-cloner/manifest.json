@@ -1,0 +1,19 @@
+{
+  "format": 1,
+  "id": "shin.server-cloner",
+  "name": "Server Cloner",
+  "description": "Clone a server's roles, channels and permission overwrites into a new server or an existing one you administer.",
+  "author": "shin <1381008677301129257> (https://github.com/fshinz/Wip-Test)",
+  "version": "1.0.0",
+  "dependencies": {
+    "valenced.api": {
+      "version": ">=1 <2"
+    },
+    "discord": {
+      "version": "*"
+    }
+  },
+  "dist": {
+    "script": "index.js"
+  }
+}
