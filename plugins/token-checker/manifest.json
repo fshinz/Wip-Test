@@ -5,7 +5,7 @@
   "name": "Token Checker",
   "author": "Shin",
   "description": "Check whether a Discord token is valid.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "dependencies": {
     "valenced.api": {
       "version": ">=1"
