@@ -132,13 +132,26 @@
       "description": "Check whether a Discord token is valid.",
       "author": "Shin",
       "channels": {
-        "latest": "1.0.0"
+        "latest": "1.0.1"
       },
       "versions": {
         "1.0.0": {
           "url": "https://fshinz.github.io/Wip-Test/pool/shin.token-checker@1.0.0.zip",
           "sha256": "b9bcd9cff12648a2d1acf75b6ca6f3f7f7ad6e97e41d8694ded16987fdeca36a",
           "size": 309,
+          "dependencies": {
+            "valenced.api": {
+              "version": ">=1"
+            },
+            "discord": {
+              "version": "*"
+            }
+          }
+        },
+        "1.0.1": {
+          "url": "https://fshinz.github.io/Wip-Test/pool/shin.token-checker@1.0.1.zip",
+          "sha256": "5d1924c853f102860254f80c12f936e57f945104af93e590b0e43481e16b9462",
+          "size": 1316,
           "dependencies": {
             "valenced.api": {
               "version": ">=1"
