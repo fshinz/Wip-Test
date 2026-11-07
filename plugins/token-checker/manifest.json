@@ -1,0 +1,20 @@
+
+{
+  "format": 1,
+  "id": "shin.token-checker",
+  "name": "Token Checker",
+  "author": "Shin",
+  "description": "Check whether a Discord token is valid.",
+  "version": "1.0.0",
+  "dependencies": {
+    "valenced.api": {
+      "version": ">=1"
+    },
+    "discord": {
+      "version": "*"
+    }
+  },
+  "dist": {
+    "script": "index.js"
+  }
+}
