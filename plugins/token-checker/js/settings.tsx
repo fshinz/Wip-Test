@@ -29,8 +29,7 @@ async function check(token: string): Promise<string> {
       `Phone: ${u.phone ?? 'none'}`,
       `2FA: ${u.mfa_enabled ? 'on' : 'off'}`,
       `Nitro: ${NITRO[u.premium_type ?? 0] ?? 'unknown'}`,
-    ].join('
-')
+    ].join('\n')
   } catch {
     return '⚠️ Network error'
   }
